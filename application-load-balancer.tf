@@ -13,7 +13,7 @@ resource "aws_alb_target_group" "ecs-target-group" {
     name                = "ecs-target-group"
     port                = "80"
     protocol            = "HTTP"
-    vpc_id              = "${aws_vpc.test_vpc.id}"
+    vpc_id              = "${aws_default_vpc.test_vpc.id}"
 
     health_check {
         healthy_threshold   = "5"
