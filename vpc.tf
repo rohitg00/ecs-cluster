@@ -1,14 +1,41 @@
+provider "aws" {
+  region     = "us-east-1"
+  profile    = "Username"
+}
+
+######################################################################################
+variable "test_vpc" {
+  description = "VPC name for Test environment"
+  type = string
+  default = "vpc-407a6528"   #its just a variable. terraform will pick default vpc.
+}
+
+variable "test_network_cidr" {
+  description = "IP addressing for Test Network"
+  default = "200.0.0.0/16"
+}
+
+variable "test_public_01_cidr" {
+  description = "Public 0.0 CIDR for externally accessible subnet"
+  default = "200.0.0.0/24"
+}
+
+variable "test_public_02_cidr" {
+  description = "Public 0.0 CIDR for externally accessible subnet"
+  default = "200.0.1.0/24"
+}
+########################################################################################
 # Define a vpc
-resource "aws_vpc" "test_vpc" {
-  cidr_block = "200.0.0.0/16"
+resource "aws_default_vpc" "test_vpc" {
+
   tags = {
-    Name = "ecstest_vpc"
+    Name = "Default VPC"
   }
 }
 
-# Internet gateway for the public subnet
-resource "aws_internet_gateway" "demoIG" {
-  vpc_id = "${aws_vpc.test_vpc.id}"
+# Internet gateway for the public subnet    
+resource "aws_internet_gateway" "demoIG" {           # ensure to remove the internet gateway from the default vpc first and then apply.
+  vpc_id = "${aws_default_vpc.test_vpc.id}"
   tags = {
     Name = "ecsDemoIG"
   }
@@ -16,9 +43,9 @@ resource "aws_internet_gateway" "demoIG" {
 
 # Public subnet
 resource "aws_subnet" "test_public_sn_01" {
-  vpc_id = "${aws_vpc.test_vpc.id}"
-  cidr_block = "200.0.0.0/24"
-  availability_zone = "ap-south-1a"
+  vpc_id = "${aws_default_vpc.test_vpc.id}"
+  cidr_block = "172.31.15.0/20"
+  availability_zone = "us-east-1a"
   tags = {
     Name = "ecstest_public_sn_01-0"
   }
@@ -26,9 +53,9 @@ resource "aws_subnet" "test_public_sn_01" {
 
 # Public subnet
 resource "aws_subnet" "test_public_sn_02" {
-  vpc_id = "${aws_vpc.test_vpc.id}"
-  cidr_block = "200.0.1.0/24"
-  availability_zone = "ap-south-1b"
+  vpc_id = "${aws_default_vpc.test_vpc.id}"
+  cidr_block = "172.31.23.0/20"
+  availability_zone = "us-east-1b"
   tags = {
     Name = "ecstest_public_sn_02-0"
   }
@@ -36,7 +63,7 @@ resource "aws_subnet" "test_public_sn_02" {
 
 # Routing table for public subnet
 resource "aws_route_table" "test_public_sn_ro" {
-  vpc_id = "${aws_vpc.test_vpc.id}"
+  vpc_id = "${aws_default_vpc.test_vpc.id}"
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = "${aws_internet_gateway.demoIG.id}"
@@ -58,7 +85,7 @@ resource "aws_route_table_association" "test_public_sn_roAssn" {
 resource "aws_security_group" "test_public_sg" {
     name = "test_public_sg"
     description = "Test public access security group"
-    vpc_id = "${aws_vpc.test_vpc.id}"
+    vpc_id = "${aws_default_vpc.test_vpc.id}"
 
    ingress {
        from_port = 22
